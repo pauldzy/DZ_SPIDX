@@ -1,15 +1,15 @@
-CREATE OR REPLACE PACKAGE dz_dict_main
+CREATE OR REPLACE PACKAGE dz_spidx_main
 AUTHID CURRENT_USER
 AS
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
    /*
-   header: DZ_DICT
+   header: DZ_SPIDX
      
    - Build ID: DZBUILDIDDZ
    - TFS Change Set: DZTFSCHANGESETDZ
    
-   Utilities for the manipulation of the Oracle data dictionary.
+   Utilities for the management of Oracle MDSYS.SPATIAL_INDEX domain indexes
    
    */
    -----------------------------------------------------------------------------
@@ -17,223 +17,133 @@ AS
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   PROCEDURE drop_type_quietly(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_type_name        IN  VARCHAR2
+   FUNCTION get_XY_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY;
+
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   FUNCTION get_XYZ_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY;
+
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   FUNCTION get_XYM_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY;
+
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   FUNCTION get_XYZM_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY;
+
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   FUNCTION get_XYMZ_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY;
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   PROCEDURE fast_spatial_index(
+       p_owner        IN  VARCHAR2 DEFAULT NULL
+      ,p_table_name   IN  VARCHAR2
+      ,p_column_name  IN  VARCHAR2
+      ,p_tablespace   IN  VARCHAR2 DEFAULT NULL
+      ,p_dimensions   IN  VARCHAR2 DEFAULT 'XY'
+      ,p_srid         IN  NUMBER   DEFAULT 8265
+      ,p_x_dim_elem   IN  MDSYS.SDO_DIM_ELEMENT DEFAULT NULL
+      ,p_y_dim_elem   IN  MDSYS.SDO_DIM_ELEMENT DEFAULT NULL
+      ,p_z_dim_elem   IN  MDSYS.SDO_DIM_ELEMENT DEFAULT NULL
+      ,p_m_dim_elem   IN  MDSYS.SDO_DIM_ELEMENT DEFAULT NULL
+   );
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   FUNCTION get_spatial_indexes(
+       p_owner      IN  VARCHAR2 DEFAULT NULL
+      ,p_table_name IN  VARCHAR2
+   ) RETURN dz_spidx_list;
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   PROCEDURE flush_spatial_indexes(
+       p_owner      IN  VARCHAR2 DEFAULT NULL
+      ,p_table_name IN  VARCHAR2
+   );
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   PROCEDURE flush_spatial_indexes(
+       p_owner      IN  VARCHAR2 DEFAULT NULL
+      ,p_table_name IN  VARCHAR2
+      ,p_output     OUT MDSYS.SDO_STRING2_ARRAY
+   );
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   FUNCTION flush_spatial_indexes(
+       p_owner      IN  VARCHAR2 DEFAULT NULL
+      ,p_table_name IN  VARCHAR2
+   ) RETURN dz_spidx_list;
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   PROCEDURE recreate_spatial_indexes(
+      p_index_array         IN  dz_spidx_list
+   );
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   PROCEDURE rebuild_user_spatial(
+       p_filter              IN  VARCHAR2
+      ,p_tablespace          IN  VARCHAR2 DEFAULT NULL
+      ,p_quiet               IN  VARCHAR2 DEFAULT 'FALSE'
    );
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   PROCEDURE drop_table_quietly (
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
+   PROCEDURE spatial_mview_refresh(
+       list                 IN  VARCHAR2
+      ,method               IN  VARCHAR2       := NULL
+      ,rollback_seg         IN  VARCHAR2       := NULL
+      ,push_deferred_rpc    IN  BOOLEAN        := TRUE
+      ,refresh_after_errors IN  BOOLEAN        := FALSE
+      ,purge_option         IN  BINARY_INTEGER := 1
+      ,parallelism          IN  BINARY_INTEGER := 0
+      ,heap_size            IN  BINARY_INTEGER := 0
+      ,atomic_refresh       IN  BOOLEAN        := TRUE
+      ,nested               IN  BOOLEAN        := FALSE
    );
    
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION table_exists(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-      ,p_column_name      IN  VARCHAR2 DEFAULT NULL
-   ) RETURN VARCHAR2;
-
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION table_exists(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-      ,p_column_name      IN  MDSYS.SDO_STRING2_ARRAY
-   ) RETURN VARCHAR2;
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION tables_exists(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_names      IN  MDSYS.SDO_STRING2_ARRAY
-   ) RETURN VARCHAR2;
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION mview_exists(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_mview_name       IN  VARCHAR2
-   ) RETURN VARCHAR2;
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION tablespace_exists(
-      p_tablespace_name   IN  VARCHAR2
-   ) RETURN VARCHAR2;
-
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION table_privileges(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-   ) RETURN MDSYS.SDO_STRING2_ARRAY;
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION table_privileges_dml(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-   ) RETURN VARCHAR2;
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION sequence_exists(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_sequence_name    IN  VARCHAR2
-   ) RETURN VARCHAR2;
-
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   PROCEDURE drop_sequence(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_sequence_name    IN  VARCHAR2
-      ,p_like_flag        IN  VARCHAR2 DEFAULT 'FALSE'
+   PROCEDURE sdo_join_check(
+       p_table_name1        IN  VARCHAR2
+      ,p_column_name1       IN  VARCHAR2
+      ,p_table_name2        IN  VARCHAR2
+      ,p_column_name2       IN  VARCHAR2
+      ,p_return_code        OUT NUMBER
+      ,p_status_message     OUT VARCHAR2
    );
    
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   PROCEDURE sequence_from_max_column(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-      ,p_column_name      IN  VARCHAR2
-      ,p_sequence_owner   IN  VARCHAR2 DEFAULT NULL
-      ,p_sequence_name    IN OUT VARCHAR2
-   );
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION quick_sequence(
-       p_owner           IN  VARCHAR2 DEFAULT NULL
-      ,p_start_with      IN  NUMBER   DEFAULT 1
-      ,p_prefix          IN  VARCHAR2 DEFAULT NULL
-      ,p_suffix          IN  VARCHAR2 DEFAULT NULL
+   FUNCTION sdo_join_check(
+       p_table_name1        IN  VARCHAR2
+      ,p_column_name1       IN  VARCHAR2
+      ,p_table_name2        IN  VARCHAR2
+      ,p_column_name2       IN  VARCHAR2
    ) RETURN VARCHAR2;
    
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION object_exists(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_object_type_name IN  VARCHAR2
-   ) RETURN VARCHAR2;
-
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION object_is_valid(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_object_type_name IN  VARCHAR2
+   FUNCTION sdo_join_check_verbose(
+       p_table_name1        IN  VARCHAR2
+      ,p_column_name1       IN  VARCHAR2
+      ,p_table_name2        IN  VARCHAR2
+      ,p_column_name2       IN  VARCHAR2
    ) RETURN VARCHAR2;
    
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION get_column_number(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-      ,p_column_name      IN  VARCHAR2
-   ) RETURN NUMBER;
-
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION rename_to_x(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-      ,p_flush_objects    IN  VARCHAR2 DEFAULT 'FALSE'
-   ) RETURN VARCHAR2;
-
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   PROCEDURE fast_not_null(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-      ,p_column_name      IN  VARCHAR2
-   );
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   PROCEDURE drop_indexes(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-   );
-
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   PROCEDURE drop_index(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_index_name       IN  VARCHAR2
-      ,p_like_flag        IN  VARCHAR2 DEFAULT 'FALSE'
-   );
-
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION index_exists(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_index_name       IN  VARCHAR2
-   ) RETURN VARCHAR2;
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   PROCEDURE drop_constraints(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-   );
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   PROCEDURE drop_constraint(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_constraint_name  IN  VARCHAR2
-      ,p_like_flag        IN  VARCHAR2 DEFAULT 'FALSE'
-   );
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   PROCEDURE drop_ref_constraints(
-       p_owner            IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name       IN  VARCHAR2
-   );
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   PROCEDURE get_index_name(
-       p_owner             IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name        IN  VARCHAR2
-      ,p_column_name       IN  VARCHAR2
-      ,p_index_owner       OUT VARCHAR2
-      ,p_index_name        OUT VARCHAR2
-   );
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION new_index_name(
-       p_owner             IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name        IN  VARCHAR2
-      ,p_column_name       IN  VARCHAR2
-      ,p_suffix_ind        IN  VARCHAR2 DEFAULT 'I'
-      ,p_full_suffix       IN  VARCHAR2 DEFAULT NULL
-   ) RETURN VARCHAR2;
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   PROCEDURE fast_index(
-       p_owner             IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name        IN  VARCHAR2
-      ,p_column_name       IN  VARCHAR2
-      ,p_index_type        IN  VARCHAR2 DEFAULT NULL
-      ,p_tablespace        IN  VARCHAR2 DEFAULT NULL
-      ,p_logging           IN  VARCHAR2 DEFAULT 'TRUE'
-   );
-   
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION table_index_ddl(
-       p_owner             IN  VARCHAR2 DEFAULT NULL
-      ,p_table_name        IN  VARCHAR2
-   ) RETURN MDSYS.SDO_STRING2_ARRAY;
-   
-END dz_dict_main;
+END dz_spidx_main;
 /
 
-GRANT EXECUTE ON dz_dict_main TO public;
+GRANT EXECUTE ON dz_spidx_main TO public;
 
