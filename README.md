@@ -1,7 +1,5 @@
 # DZ_SPIDX
-Code for the manipulation of spatial indexes
-
-General utility for the manipulation of Oracle spatial indexes including persistence of spatial index parameters.
+PL/SQL utilities for the manipulation of Oracle Spatial indexes including persistence of spatial index parameters.
 
 Sample usage:
 ``` sql
