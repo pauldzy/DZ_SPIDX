@@ -7,6 +7,7 @@ WHENEVER OSERROR  EXIT -98;
 SET DEFINE OFF;
 
 
+
 --*************************--
 PROMPT DZ_SPIDX_UTIL.pks;
 
@@ -119,6 +120,7 @@ END dz_spidx_util;
 /
 
 GRANT EXECUTE ON dz_spidx_util TO PUBLIC;
+
 
 --*************************--
 PROMPT DZ_SPIDX_UTIL.pkb;
@@ -920,6 +922,8 @@ AS
    
 END dz_spidx_util;
 /
+
+
 --*************************--
 PROMPT DZ_SPIDX.tps;
 
@@ -1022,12 +1026,55 @@ AS OBJECT (
    ,MEMBER PROCEDURE update_sdo_metadata(
        p_dim_array  IN  MDSYS.SDO_DIM_ARRAY DEFAULT NULL
       ,p_srid       IN  NUMBER DEFAULT NULL
-    )         
+    )
+    
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION geodetic_XY_diminfo
+    RETURN MDSYS.SDO_DIM_ARRAY
    
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION geodetic_XYZ_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+    ) RETURN MDSYS.SDO_DIM_ARRAY
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION geodetic_XYM_diminfo(
+       p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION geodetic_XYZM_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+      ,p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION webmercator_XY_diminfo
+    RETURN MDSYS.SDO_DIM_ARRAY
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION albers_XY_diminfo
+    RETURN MDSYS.SDO_DIM_ARRAY
+    
 );
 /
 
 GRANT EXECUTE ON dz_spidx TO PUBLIC;
+
 
 --*************************--
 PROMPT DZ_SPIDX.tpb;
@@ -1062,9 +1109,12 @@ AS
       IF p_table_owner IS NULL
       THEN
          self.table_owner := USER;
+         
       ELSE
          self.table_owner := p_table_owner;
+         
       END IF;
+      
       self.table_name     := p_table_name;
       self.column_name    := p_column_name;
       
@@ -1078,6 +1128,7 @@ AS
       IF self.geometry_srid IS NULL
       THEN
          self.harvest_sdo_srid();
+         
       END IF;
              
       RETURN;
@@ -1130,9 +1181,9 @@ AS
       self            IN OUT dz_spidx
    ) RETURN VARCHAR2
    AS
-      str_sql         VARCHAR2(4000);
-      str_table_owner VARCHAR2(30);
-      str_index_owner VARCHAR2(30);
+      str_sql         VARCHAR2(4000 Char);
+      str_table_owner VARCHAR2(30 Char);
+      str_index_owner VARCHAR2(30 Char);
       
    BEGIN
    
@@ -1143,7 +1194,10 @@ AS
       IF self.table_name IS NULL
       OR self.column_name IS NULL
       THEN
-         RAISE_APPLICATION_ERROR(-20001,'spatial index object not complete!');
+         RAISE_APPLICATION_ERROR(
+             -20001
+            ,'spatial index object not complete'
+         );
       
       END IF;
       
@@ -1225,8 +1279,8 @@ AS
       self            IN OUT dz_spidx
    ) RETURN VARCHAR2
    AS
-      str_sql         VARCHAR2(4000);
-      str_index_owner VARCHAR2(30);
+      str_sql         VARCHAR2(4000 Char);
+      str_index_owner VARCHAR2(30 Char);
       
    BEGIN
    
@@ -1236,14 +1290,20 @@ AS
       --------------------------------------------------------------------------
       IF self.index_name IS NULL
       THEN
-         RAISE_APPLICATION_ERROR(-20001,'spatial index object not complete!');
+         RAISE_APPLICATION_ERROR(
+             -20001
+            ,'spatial index object not complete'
+         );
+         
       END IF;
       
       IF self.index_owner IS NULL
       THEN
          str_index_owner := USER;
+         
       ELSE
          str_index_owner := self.index_owner;
+         
       END IF;
       
       --------------------------------------------------------------------------
@@ -1310,6 +1370,7 @@ AS
          IF self.geometry_srid IS NULL
          THEN
              self.harvest_sdo_srid();
+             
          END IF;
       
       END IF;
@@ -1349,41 +1410,31 @@ AS
       AND (p_keyword IS NULL OR p_keyword IN ('XY'))
       THEN
          self.geometry_srid := p_srid;
-         self.geometry_dim_array := SDO_DIM_ARRAY(
-             SDO_DIM_ELEMENT('X',-180,180,0.05)
-            ,SDO_DIM_ELEMENT('Y',-90,90,0.05)
-         );
+         self.geometry_dim_array := dz_spidx.geodetic_XY_diminfo();
          
       ELSIF p_srid IN (8265,4269,8307,4326)
       AND (p_keyword IS NULL OR p_keyword IN ('XYM'))
       THEN
          self.geometry_srid := p_srid;
-         self.geometry_dim_array := SDO_DIM_ARRAY(
-             SDO_DIM_ELEMENT('X',-180,180,0.05)
-            ,SDO_DIM_ELEMENT('Y',-90,90,0.05)
-            ,SDO_DIM_ELEMENT('M',0,100,0.0001)
-         );
+         self.geometry_dim_array := dz_spidx.geodetic_XYM_diminfo();
       
       ELSIF p_srid IN (3857)
       AND (p_keyword IS NULL OR p_keyword IN ('XY'))
       THEN
          self.geometry_srid := p_srid;
-         self.geometry_dim_array := SDO_DIM_ARRAY(
-             SDO_DIM_ELEMENT('X',-20037508.34,20037508.34,0.05)
-            ,SDO_DIM_ELEMENT('Y',-20037508.34,20037508.34,0.05)
-         );
+         self.geometry_dim_array := dz_spidx.webmercator_XY_diminfo();
          
       ELSIF p_srid BETWEEN 1000001 AND 1000005
       AND (p_keyword IS NULL OR p_keyword IN ('XY'))
       THEN
          self.geometry_srid := p_srid;
-         self.geometry_dim_array := SDO_DIM_ARRAY(
-             SDO_DIM_ELEMENT('X',-999999999,999999999,0.05)
-            ,SDO_DIM_ELEMENT('Y',-999999999,999999999,0.05)
-         );
+         self.geometry_dim_array := dz_spidx.albers_XY_diminfo();
    
       ELSE
-         RAISE_APPLICATION_ERROR(-20001,'srid has not be predefined in object');
+         RAISE_APPLICATION_ERROR(
+             -20001
+            ,'srid has not be predefined in object'
+         );
          
       END IF;
       
@@ -1413,7 +1464,7 @@ AS
       p_srid          IN  NUMBER
    )
    AS
-      str_sql VARCHAR2(4000);
+      str_sql VARCHAR2(4000 Char);
       
    BEGIN
    
@@ -1439,8 +1490,8 @@ AS
       self  IN OUT dz_spidx
    ) 
    AS
-      str_table_owner VARCHAR2(30);
-      str_index_owner VARCHAR2(30);
+      str_table_owner VARCHAR2(30 Char);
+      str_index_owner VARCHAR2(30 Char);
       
    BEGIN
    
@@ -1462,7 +1513,7 @@ AS
          
       END IF;
       
-      IF self.table_name IS NOT NULL
+      IF self.table_name   IS NOT NULL
       AND self.column_name IS NOT NULL
       THEN
          SELECT
@@ -1538,15 +1589,17 @@ AS
       self  IN OUT dz_spidx
    )
    AS
-      str_table_owner VARCHAR2(30);
+      str_table_owner VARCHAR2(30 Char);
       
    BEGIN
    
       IF self.table_owner IS NULL
       THEN
          str_table_owner := USER;
+         
       ELSE
          str_table_owner := self.table_owner;
+         
       END IF;
    
       SELECT
@@ -1581,7 +1634,7 @@ AS
       self  IN OUT dz_spidx
    )
    AS
-      str_sql VARCHAR2(4000);
+      str_sql VARCHAR2(4000 Char);
       
    BEGIN
    
@@ -1620,7 +1673,10 @@ AS
          AND a.column_name = self.column_name;
       
       ELSE
-         RAISE_APPLICATION_ERROR(-20001,'not spatial table owner');
+         RAISE_APPLICATION_ERROR(
+             -20001
+            ,'not spatial table owner'
+         );
          
       END IF;
       
@@ -1669,14 +1725,193 @@ AS
          COMMIT;
          
       ELSE
-         RAISE_APPLICATION_ERROR(-20001,'not spatial table owner');
+         RAISE_APPLICATION_ERROR(
+             -20001
+            ,'not spatial table owner'
+         );
          
       END IF;
          
    END update_sdo_metadata;
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION geodetic_XY_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY
+   AS
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-180
+             ,180
+             ,0.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-90
+             ,90
+             ,0.05
+          )
+      );
+      
+   END geodetic_XY_diminfo;
+
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION geodetic_XYZ_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   AS  
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-180
+             ,180
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-90
+             ,90
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Z'
+             ,p_z_lower_bound
+             ,p_z_upper_bound
+             ,p_z_tolerance
+          )
+      );
+      
+   END geodetic_XYZ_diminfo;
+
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION geodetic_XYM_diminfo(
+       p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   AS
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-180
+             ,180
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-90
+             ,90
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'M'
+             ,p_m_lower_bound
+             ,p_m_upper_bound
+             ,p_m_tolerance
+          )
+      );
+      
+   END geodetic_XYM_diminfo;
+
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION geodetic_XYZM_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+      ,p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   AS
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-180
+             ,180
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-90
+             ,90
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Z'
+             ,p_z_lower_bound
+             ,p_z_upper_bound
+             ,p_z_tolerance
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'M'
+             ,p_m_lower_bound
+             ,p_m_upper_bound
+             ,p_m_tolerance
+          )
+      );
+      
+   END geodetic_XYZM_diminfo;
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION webmercator_XY_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY
+   AS
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-20037508.34
+             ,20037508.34
+             ,0.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-20037508.34
+             ,20037508.34
+             ,0.05
+          )
+      );
+
+   END webmercator_XY_diminfo;
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION albers_XY_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY
+   AS
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-999999999
+             ,999999999
+             ,0.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-999999999
+             ,999999999
+             ,0.05
+          )
+      );
+
+   END albers_XY_diminfo;
 
 END;
 /
+
+
 --*************************--
 PROMPT DZ_SPIDX_LIST.tps;
 
@@ -1686,6 +1921,7 @@ TABLE OF dz_spidx;
 /
 
 GRANT EXECUTE ON dz_spidx_list TO PUBLIC;
+
 
 --*************************--
 PROMPT DZ_SPIDX_MAIN.pks;
@@ -1698,8 +1934,8 @@ AS
    /*
    header: DZ_SPIDX
      
-   - Build ID: 2014-12-19_12-38-35
-   - TFS Change Set: 4386
+   - Build ID: 4
+   - TFS Change Set: 8291
    
    Utilities for the management of Oracle MDSYS.SPATIAL_INDEX domain indexes
    
@@ -1709,28 +1945,122 @@ AS
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XY_diminfo
+   /*
+   Function: dz_spidz_main.geodetic_XY_diminfo
+
+   Function to quickly return a "default" geodetic dimensional info array.
+
+   Parameters:
+
+      None
+      
+   Returns:
+
+      MDSYS.SDO_DIM_ARRAY collection
+      
+   Notes:
+   
+   - Assumes 5 centimeter tolerance for all geodetic spatial information. 
+
+   */
+   FUNCTION geodetic_XY_diminfo
    RETURN MDSYS.SDO_DIM_ARRAY;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XYZ_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY;
+   /*
+   Function: dz_spidz_main.geodetic_XYZ_diminfo
+
+   Function to quickly return a "default" 3D geodetic dimensional info array.
+
+   Parameters:
+
+      p_z_lower_bound - optional override for lower Z bound (default -15000)
+      p_z_upper_bound - optional override for upper Z bound (default 15000)
+      p_z_tolerance   - optional override for Z tolerance (default 0.001 units)
+      
+   Returns:
+
+      MDSYS.SDO_DIM_ARRAY collection
+      
+   Notes:
+   
+   - Assumes 5 centimeter tolerance for all geodetic spatial information. 
+
+   */
+   FUNCTION geodetic_XYZ_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+   ) RETURN MDSYS.SDO_DIM_ARRAY;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XYM_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY;
+   /*
+   Function: dz_spidz_main.geodetic_XYM_diminfo
+
+   Function to quickly return a "default" LRS geodetic dimensional info array.
+
+   Parameters:
+
+      p_m_lower_bound - optional override for lower M bound (default 0)
+      p_m_upper_bound - optional override for upper M bound (default 100)
+      p_m_tolerance   - optional override for M tolerance (default 0.00001 units)
+      
+   Returns:
+
+      MDSYS.SDO_DIM_ARRAY collection
+      
+   Notes:
+   
+   - Assumes 5 centimeter tolerance for all geodetic spatial information. 
+   
+   - M defaults represent common reach measure system used in the US National
+     hydrology dataset.
+
+   */
+   FUNCTION geodetic_XYM_diminfo(
+       p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XYZM_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY;
+   /*
+   Function: dz_spidz_main.geodetic_XYZM_diminfo
 
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION get_XYMZ_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY;
+   Function to quickly return a "default" 3D LRS geodetic dimensional info array.
+
+   Parameters:
+
+      p_z_lower_bound - optional override for lower Z bound (default -15000)
+      p_z_upper_bound - optional override for upper Z bound (default 15000)
+      p_z_tolerance   - optional override for Z tolerance (default 0.001 units)
+      p_m_lower_bound - optional override for lower M bound (default 0)
+      p_m_upper_bound - optional override for upper M bound (default 100)
+      p_m_tolerance   - optional override for M tolerance (default 0.00001 units)
+      
+   Returns:
+
+      MDSYS.SDO_DIM_ARRAY collection
+      
+   Notes:
+   
+   - Assumes 5 centimeter tolerance for all geodetic spatial information. 
+   
+   - M defaults represent common reach measure system used in the US National
+     hydrology dataset.
+
+   */
+   FUNCTION geodetic_XYZM_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+      ,p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY;
    
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
@@ -1749,6 +2079,27 @@ AS
    
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
+   /*
+   Function: dz_spidz_main.get_spatial_indexes
+
+   Function to harvest into list of dz_spidx objects all spatial indexes on a
+   given table.
+
+   Parameters:
+
+      p_owner      optional owner name of table to be inspected
+      p_table_name table to be inspects for spatial indexes
+      
+   Returns:
+
+      dz_spidx_list collection
+      
+   Notes:
+   
+   - The list of dz_spidx will have a count of zero if no spatial indexes are 
+     discovered.
+
+   */
    FUNCTION get_spatial_indexes(
        p_owner      IN  VARCHAR2 DEFAULT NULL
       ,p_table_name IN  VARCHAR2
@@ -1771,6 +2122,30 @@ AS
    
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
+   /*
+   Function: dz_spidz_main.flush_spatial_indexes
+
+   Function to harvest into list of dz_spidx objects all spatial indexes on a
+   given table and subsequently drop those indexes.
+
+   Parameters:
+
+      p_owner      optional owner name of table to be inspected
+      p_table_name table to be inspects for spatial indexes
+      
+   Returns:
+
+      dz_spidx_list collection
+      
+   Notes:
+   
+   - Obviously the user must have permission to drop the indexes for this function
+     to succeed.
+     
+   - The list of dz_spidx will have a count of zero if no spatial indexes are 
+     discovered.
+
+   */
    FUNCTION flush_spatial_indexes(
        p_owner      IN  VARCHAR2 DEFAULT NULL
       ,p_table_name IN  VARCHAR2
@@ -1778,12 +2153,63 @@ AS
    
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
+   /*
+   Procedure: dz_spidz_main.recreate_spatial_indexes
+
+   Procedure to recreate all spatial indexes documented in the collection of 
+   dz_spidx objects.
+
+   Parameters:
+
+      p_index_array - dz_spidx_list collection of dz_spidx objects
+      
+   Returns:
+
+      Nothing
+      
+   Notes:
+   
+   - Obviously the user must have permission to create the indexes for this 
+     function to succeed.
+
+   */
    PROCEDURE recreate_spatial_indexes(
       p_index_array         IN  dz_spidx_list
    );
    
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
+   /*
+   Procedure: dz_spidz_main.recreate_spatial_indexes
+
+   Rebuilding spatial domain indexes using index rebuild DDL may be problematic
+   for a number of reasons.  For example an online rebuild will require the 
+   spatial index exist twice on disk until the final swap removes the old version.
+   This can create storage management problems for very large indexes.  Often 
+   the simple solution is to just drop and recreate the index.  This procedure
+   wraps together the step for this task using dz_spidx to persist the details
+   of the spatial index so you do not have to.
+
+   Parameters:
+
+      p_filter - use to limit the spatial rebuilds to a given set of tables.  The
+      filter is simply table names LIKE '%' || p_filter || '%'
+      p_tablespace - optional parameter to change the domain index tablespace used.
+      p_quiet - optional TRUE or FALSE parameter to log details of rebuild action
+      to DBMS_OUTPUT.
+      
+   Returns:
+
+      Nothing
+      
+   Notes:
+   
+   - Note that details of the spatial index are not stored anywhere permanently
+     during the rebuild process.  If for some reason your rebuild fails (space 
+     issues perhaps), the details of the spatial index are lost and you will 
+     need to recreate the index from your own DDL documentation.
+
+   */
    PROCEDURE rebuild_user_spatial(
        p_filter              IN  VARCHAR2
       ,p_tablespace          IN  VARCHAR2 DEFAULT NULL
@@ -1792,6 +2218,44 @@ AS
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
+   /*
+   Procedure: dz_spidz_main.spatial_mview_refresh
+
+   Refreshing an Oracle materialized view with a spatial domain index may
+   generate punishing performance problems.  Usually there is little to be done
+   other than drop the spatial index, refresh the materialized view and then 
+   recreate the index afterwards.  The following procedure inspects a given
+   materialized view, collects information on the spatial indexes, drop those 
+   spatial indexes, executes the refresh and then replaces the spatial indexes.
+
+   Parameters:
+
+      list - materialized view refresh parameters
+      method - materialized view refresh parameters
+      rollback_seg - materialized view refresh parameters
+      push_deferred_rpc - materialized view refresh parameters
+      refresh_after_errors - materialized view refresh parameters
+      purge_option - materialized view refresh parameters
+      parallelism - materialized view refresh parameters
+      heap_size - materialized view refresh parameters
+      atomic_refresh - materialized view refresh parameters
+      nested - materialized view refresh parameters
+      
+   Returns:
+
+      Nothing
+      
+   Notes:
+   
+   - For information on the procedure parameters see Oracle documentation on
+     DBMS_MVIEW.REFRESH.
+     
+   - DZ_SPIDX currently has no functionality to persist the details of a given
+     spatial index outside the scope of it's current process.  If your materialized
+     view refresh crashes for some reason, the information about the dropped
+     spatial index is lost and will need to be recreated from your DDL documentation.
+
+   */
    PROCEDURE spatial_mview_refresh(
        list                 IN  VARCHAR2
       ,method               IN  VARCHAR2       := NULL
@@ -1818,6 +2282,33 @@ AS
    
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
+   /*
+   Function: dz_spidz_main.sdo_join_check
+
+   Utilizing SDO_JOIN in cross-schema fashion is highly problematic as often the
+   outsider schema lacks privledges on the domain index tables needed to utilize
+   SDO_JOIN.  Even when the permissions are granted, the next time the spatial
+   index is rebuilt the problem will reoccur.  Similarly a missing spatial index
+   will equally hose the spatial join.  This function return TRUE or FALSE 
+   regarding whether SDO_JOIN is currently possible between two tables.
+
+   Parameters:
+
+      p_table_name1  - [owner.]table_name of first table in join
+      p_column_name1 - column name of first table in join
+      p_table_name2  - [owner.]table_name of second table in join
+      p_column_name2 - column name of second table in join
+      
+   Returns:
+
+      VARCHAR2 text of either TRUE or FALSE
+      
+   Notes:
+   
+   - For information on the actual problem use the sdo_join_check_verbose 
+     version.
+
+   */
    FUNCTION sdo_join_check(
        p_table_name1        IN  VARCHAR2
       ,p_column_name1       IN  VARCHAR2
@@ -1827,6 +2318,36 @@ AS
    
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
+   /*
+   Function: dz_spidz_main.sdo_join_check_verbose
+
+   Utilizing SDO_JOIN in cross-schema fashion is highly problematic as often the
+   outsider schema lacks privledges on the domain index tables needed to utilize
+   SDO_JOIN.  Even when the permissions are granted, the next time the spatial
+   index is rebuilt the problem will reoccur.  Similarly a missing spatial index
+   will equally hose the spatial join.  This function return details on what
+   actions or permissions are needed in order to execute a spatial join between
+   two tables.
+
+   Parameters:
+
+      p_table_name1  - [owner.]table_name of first table in join
+      p_column_name1 - column name of first table in join
+      p_table_name2  - [owner.]table_name of second table in join
+      p_column_name2 - column name of second table in join
+      
+   Returns:
+
+      VARCHAR2 text or either TRUE or an explanation of the current problem
+      
+   Notes:
+   
+   - This functions assumes the basics that you can see the tables in question
+     and thus interrogate table metadata to discover the names of the domain
+     index tables.  The main results will be the exact domain table name that
+     you need granted select permission upon to accomplish the spatial join.
+
+   */
    FUNCTION sdo_join_check_verbose(
        p_table_name1        IN  VARCHAR2
       ,p_column_name1       IN  VARCHAR2
@@ -1848,164 +2369,70 @@ AS
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XY_diminfo
+   FUNCTION geodetic_XY_diminfo
    RETURN MDSYS.SDO_DIM_ARRAY
    AS
-      ary_output MDSYS.SDO_DIM_ARRAY
-         := MDSYS.SDO_DIM_ARRAY(
-            MDSYS.SDO_DIM_ELEMENT(
-               'X',
-               -180,
-                180,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Y',
-               -90,
-                90,
-               .05
-            )
-        );
    BEGIN
-      RETURN ary_output;
+      RETURN dz_spidx.geodetic_XY_diminfo();
       
-   END get_XY_diminfo;
+   END geodetic_XY_diminfo;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XYZ_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY
-   AS
-      ary_output MDSYS.SDO_DIM_ARRAY
-      := MDSYS.SDO_DIM_ARRAY(
-            MDSYS.SDO_DIM_ELEMENT(
-               'X',
-               -180,
-                180,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Y',
-               -90,
-                90,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Z',
-               -15000,
-                15000,
-               .05
-            )
-        );
+   FUNCTION geodetic_XYZ_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   AS  
    BEGIN
-      RETURN ary_output;
+      RETURN dz_spidx.geodetic_XYZ_diminfo(
+          p_z_lower_bound => p_z_lower_bound
+         ,p_z_upper_bound => p_z_upper_bound
+         ,p_z_tolerance   => p_z_tolerance
+      );
       
-   END get_XYZ_diminfo;
+   END geodetic_XYZ_diminfo;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XYM_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY
+   FUNCTION geodetic_XYM_diminfo(
+       p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
    AS
-      ary_output MDSYS.SDO_DIM_ARRAY
-      := MDSYS.SDO_DIM_ARRAY(
-            MDSYS.SDO_DIM_ELEMENT(
-               'X',
-               -180,
-                180,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Y',
-               -90,
-                90,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'M',
-                0,
-                100,
-               .00001
-            )
-        );
    BEGIN
-      RETURN ary_output;
+      RETURN dz_spidx.geodetic_XYM_diminfo(
+          p_m_lower_bound => p_m_lower_bound
+         ,p_m_upper_bound => p_m_upper_bound
+         ,p_m_tolerance   => p_m_tolerance
+      );
       
-   END get_XYM_diminfo;
+   END geodetic_XYM_diminfo;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XYZM_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY
+   FUNCTION geodetic_XYZM_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+      ,p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
    AS
-      ary_output MDSYS.SDO_DIM_ARRAY
-      := MDSYS.SDO_DIM_ARRAY(
-            MDSYS.SDO_DIM_ELEMENT(
-               'X',
-               -180,
-                180,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Y',
-               -90,
-                90,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Z',
-               -15000,
-                15000,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'M',
-                0,
-                100,
-               .00001
-            )
-        );
    BEGIN
-      RETURN ary_output;
+      RETURN dz_spidx.geodetic_XYZM_diminfo(
+          p_z_lower_bound => p_z_lower_bound
+         ,p_z_upper_bound => p_z_upper_bound
+         ,p_z_tolerance   => p_z_tolerance
+         ,p_m_lower_bound => p_m_lower_bound
+         ,p_m_upper_bound => p_m_upper_bound
+         ,p_m_tolerance   => p_m_tolerance
+      );
       
-   END get_XYZM_diminfo;
-
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION get_XYMZ_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY
-   AS
-      ary_output MDSYS.SDO_DIM_ARRAY
-      := MDSYS.SDO_DIM_ARRAY(
-            MDSYS.SDO_DIM_ELEMENT(
-               'X',
-               -180,
-                180,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Y',
-               -90,
-                90,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'M',
-                0,
-                100,
-               .00001
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Z',
-               -15000,
-                15000,
-               .05
-            )
-        );
-   BEGIN
-      RETURN ary_output;
-      
-   END get_XYMZ_diminfo;
+   END geodetic_XYZM_diminfo;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
@@ -2088,7 +2515,7 @@ AS
       -- Step 50
       -- Run the refresh
       --------------------------------------------------------------------------
-      DBMS_MVIEW.REFRESH (
+      DBMS_MVIEW.REFRESH(
           list                   => list
          ,method                 => method
          ,rollback_seg           => rollback_seg
@@ -2131,7 +2558,7 @@ AS
    )
    AS
       num_srid        NUMBER       := p_srid;
-      str_owner       VARCHAR2(30) := UPPER(p_owner);
+      str_owner       VARCHAR2(30 Char) := UPPER(p_owner);
       obj_spidx       dz_spidx;
       int_counter     PLS_INTEGER;
       
@@ -2239,7 +2666,7 @@ AS
       ,p_table_name  IN  VARCHAR2
    ) RETURN dz_spidx_list
    AS
-      str_owner       VARCHAR2(30) := UPPER(p_owner);
+      str_owner       VARCHAR2(30 Char) := UPPER(p_owner);
       ary_index_owner MDSYS.SDO_STRING2_ARRAY;
       ary_index_name  MDSYS.SDO_STRING2_ARRAY;
       ary_spx         dz_spidx_list;
@@ -2312,7 +2739,7 @@ AS
       ,p_output     OUT MDSYS.SDO_STRING2_ARRAY
    )
    AS
-      str_owner  VARCHAR2(30) := UPPER(p_owner);
+      str_owner  VARCHAR2(30 Char) := UPPER(p_owner);
       ary_spx    dz_spidx_list;
       
    BEGIN
@@ -2364,7 +2791,7 @@ AS
       ,p_table_name   IN  VARCHAR2
    ) RETURN dz_spidx_list
    AS
-      str_owner VARCHAR2(30) := UPPER(p_owner);
+      str_owner VARCHAR2(30 Char) := UPPER(p_owner);
       ary_spx   dz_spidx_list;
       
    BEGIN
@@ -2418,15 +2845,15 @@ AS
       ,p_quiet        IN  VARCHAR2 DEFAULT 'FALSE'
    )
    AS
-      str_filter     VARCHAR2(4000) := UPPER(p_filter);
-      str_quiet      VARCHAR2(4000) := UPPER(p_quiet);
+      str_filter     VARCHAR2(4000 Char) := UPPER(p_filter);
+      str_quiet      VARCHAR2(4000 Char) := UPPER(p_quiet);
       ary_tables     MDSYS.SDO_STRING2_ARRAY;
       ary_columns    MDSYS.SDO_STRING2_ARRAY;
       ary_colnums    MDSYS.SDO_NUMBER_ARRAY;
       ary_indexes    MDSYS.SDO_STRING2_ARRAY;
-      str_tablespace_blurb VARCHAR2(4000);
-      str_indexname  VARCHAR2(30);
-      str_sql        VARCHAR2(4000);
+      str_tablespace_blurb VARCHAR2(4000 Char);
+      str_indexname  VARCHAR2(30 Char);
+      str_sql        VARCHAR2(4000 Char);
       
    BEGIN
       
@@ -2635,16 +3062,16 @@ AS
       ,p_status_message     OUT VARCHAR2
    )
    AS
-      str_owner1        VARCHAR2(30);
-      str_table1        VARCHAR2(30);
-      str_owner2        VARCHAR2(30);
-      str_table2        VARCHAR2(30);
+      str_owner1        VARCHAR2(30 Char);
+      str_table1        VARCHAR2(30 Char);
+      str_owner2        VARCHAR2(30 Char);
+      str_table2        VARCHAR2(30 Char);
       num_counter1      PLS_INTEGER;
       num_counter2      PLS_INTEGER;
-      str_spidx_owner1  VARCHAR2(30);
-      str_spidx_table1  VARCHAR2(30);
-      str_spidx_owner2  VARCHAR2(30);
-      str_spidx_table2  VARCHAR2(30);
+      str_spidx_owner1  VARCHAR2(30 Char);
+      str_spidx_table1  VARCHAR2(30 Char);
+      str_spidx_owner2  VARCHAR2(30 Char);
+      str_spidx_table2  VARCHAR2(30 Char);
       
    BEGIN
    
@@ -2772,7 +3199,7 @@ AS
    ) RETURN VARCHAR2
    AS
       num_return_code    NUMBER;
-      str_status_message VARCHAR2(4000);
+      str_status_message VARCHAR2(4000 Char);
       
    BEGIN
       sdo_join_check(
@@ -2805,7 +3232,7 @@ AS
    ) RETURN VARCHAR2
    AS
       num_return_code    NUMBER;
-      str_status_message VARCHAR2(4000);
+      str_status_message VARCHAR2(4000 Char);
       
    BEGIN
       sdo_join_check(
@@ -2830,6 +3257,8 @@ AS
    
 END dz_spidx_main;
 /
+
+
 --*************************--
 PROMPT DZ_SPIDX_TEST.pks;
 
@@ -2837,10 +3266,10 @@ CREATE OR REPLACE PACKAGE dz_spidx_test
 AUTHID DEFINER
 AS
 
-   C_TFS_CHANGESET CONSTANT NUMBER := 4386;
-   C_JENKINS_JOBNM CONSTANT VARCHAR2(255) := 'BUILD-DZ_SPIDX';
-   C_JENKINS_BUILD CONSTANT NUMBER := 16;
-   C_JENKINS_BLDID CONSTANT VARCHAR2(255) := '2014-12-19_12-38-35';
+   C_TFS_CHANGESET CONSTANT NUMBER := 8291;
+   C_JENKINS_JOBNM CONSTANT VARCHAR2(255 Char) := 'NULL';
+   C_JENKINS_BUILD CONSTANT NUMBER := 4;
+   C_JENKINS_BLDID CONSTANT VARCHAR2(255 Char) := 'NULL';
    
    C_PREREQUISITES CONSTANT MDSYS.SDO_STRING2_ARRAY := MDSYS.SDO_STRING2_ARRAY(
    );
@@ -2869,6 +3298,7 @@ END dz_spidx_test;
 /
 
 GRANT EXECUTE ON dz_spidx_test TO public;
+
 
 --*************************--
 PROMPT DZ_SPIDX_TEST.pkb;
@@ -2943,6 +3373,8 @@ AS
 
 END dz_spidx_test;
 /
+
+
 --*************************--
 PROMPT sqlplus_footer.sql;
 

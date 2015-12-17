@@ -97,8 +97,50 @@ AS OBJECT (
    ,MEMBER PROCEDURE update_sdo_metadata(
        p_dim_array  IN  MDSYS.SDO_DIM_ARRAY DEFAULT NULL
       ,p_srid       IN  NUMBER DEFAULT NULL
-    )         
+    )
+    
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION geodetic_XY_diminfo
+    RETURN MDSYS.SDO_DIM_ARRAY
    
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION geodetic_XYZ_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+    ) RETURN MDSYS.SDO_DIM_ARRAY
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION geodetic_XYM_diminfo(
+       p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION geodetic_XYZM_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+      ,p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION webmercator_XY_diminfo
+    RETURN MDSYS.SDO_DIM_ARRAY
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   ,STATIC FUNCTION albers_XY_diminfo
+    RETURN MDSYS.SDO_DIM_ARRAY
+    
 );
 /
 

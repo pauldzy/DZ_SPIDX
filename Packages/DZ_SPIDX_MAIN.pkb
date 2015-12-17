@@ -3,164 +3,70 @@ AS
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XY_diminfo
+   FUNCTION geodetic_XY_diminfo
    RETURN MDSYS.SDO_DIM_ARRAY
    AS
-      ary_output MDSYS.SDO_DIM_ARRAY
-         := MDSYS.SDO_DIM_ARRAY(
-            MDSYS.SDO_DIM_ELEMENT(
-               'X',
-               -180,
-                180,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Y',
-               -90,
-                90,
-               .05
-            )
-        );
    BEGIN
-      RETURN ary_output;
+      RETURN dz_spidx.geodetic_XY_diminfo();
       
-   END get_XY_diminfo;
+   END geodetic_XY_diminfo;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XYZ_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY
-   AS
-      ary_output MDSYS.SDO_DIM_ARRAY
-      := MDSYS.SDO_DIM_ARRAY(
-            MDSYS.SDO_DIM_ELEMENT(
-               'X',
-               -180,
-                180,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Y',
-               -90,
-                90,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Z',
-               -15000,
-                15000,
-               .05
-            )
-        );
+   FUNCTION geodetic_XYZ_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   AS  
    BEGIN
-      RETURN ary_output;
+      RETURN dz_spidx.geodetic_XYZ_diminfo(
+          p_z_lower_bound => p_z_lower_bound
+         ,p_z_upper_bound => p_z_upper_bound
+         ,p_z_tolerance   => p_z_tolerance
+      );
       
-   END get_XYZ_diminfo;
+   END geodetic_XYZ_diminfo;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XYM_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY
+   FUNCTION geodetic_XYM_diminfo(
+       p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
    AS
-      ary_output MDSYS.SDO_DIM_ARRAY
-      := MDSYS.SDO_DIM_ARRAY(
-            MDSYS.SDO_DIM_ELEMENT(
-               'X',
-               -180,
-                180,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Y',
-               -90,
-                90,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'M',
-                0,
-                100,
-               .00001
-            )
-        );
    BEGIN
-      RETURN ary_output;
+      RETURN dz_spidx.geodetic_XYM_diminfo(
+          p_m_lower_bound => p_m_lower_bound
+         ,p_m_upper_bound => p_m_upper_bound
+         ,p_m_tolerance   => p_m_tolerance
+      );
       
-   END get_XYM_diminfo;
+   END geodetic_XYM_diminfo;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
-   FUNCTION get_XYZM_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY
+   FUNCTION geodetic_XYZM_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+      ,p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
    AS
-      ary_output MDSYS.SDO_DIM_ARRAY
-      := MDSYS.SDO_DIM_ARRAY(
-            MDSYS.SDO_DIM_ELEMENT(
-               'X',
-               -180,
-                180,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Y',
-               -90,
-                90,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Z',
-               -15000,
-                15000,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'M',
-                0,
-                100,
-               .00001
-            )
-        );
    BEGIN
-      RETURN ary_output;
+      RETURN dz_spidx.geodetic_XYZM_diminfo(
+          p_z_lower_bound => p_z_lower_bound
+         ,p_z_upper_bound => p_z_upper_bound
+         ,p_z_tolerance   => p_z_tolerance
+         ,p_m_lower_bound => p_m_lower_bound
+         ,p_m_upper_bound => p_m_upper_bound
+         ,p_m_tolerance   => p_m_tolerance
+      );
       
-   END get_XYZM_diminfo;
-
-   -----------------------------------------------------------------------------
-   -----------------------------------------------------------------------------
-   FUNCTION get_XYMZ_diminfo
-   RETURN MDSYS.SDO_DIM_ARRAY
-   AS
-      ary_output MDSYS.SDO_DIM_ARRAY
-      := MDSYS.SDO_DIM_ARRAY(
-            MDSYS.SDO_DIM_ELEMENT(
-               'X',
-               -180,
-                180,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Y',
-               -90,
-                90,
-               .05
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'M',
-                0,
-                100,
-               .00001
-            ),
-            MDSYS.SDO_DIM_ELEMENT(
-               'Z',
-               -15000,
-                15000,
-               .05
-            )
-        );
-   BEGIN
-      RETURN ary_output;
-      
-   END get_XYMZ_diminfo;
+   END geodetic_XYZM_diminfo;
 
    -----------------------------------------------------------------------------
    -----------------------------------------------------------------------------
@@ -243,7 +149,7 @@ AS
       -- Step 50
       -- Run the refresh
       --------------------------------------------------------------------------
-      DBMS_MVIEW.REFRESH (
+      DBMS_MVIEW.REFRESH(
           list                   => list
          ,method                 => method
          ,rollback_seg           => rollback_seg
@@ -286,7 +192,7 @@ AS
    )
    AS
       num_srid        NUMBER       := p_srid;
-      str_owner       VARCHAR2(30) := UPPER(p_owner);
+      str_owner       VARCHAR2(30 Char) := UPPER(p_owner);
       obj_spidx       dz_spidx;
       int_counter     PLS_INTEGER;
       
@@ -394,7 +300,7 @@ AS
       ,p_table_name  IN  VARCHAR2
    ) RETURN dz_spidx_list
    AS
-      str_owner       VARCHAR2(30) := UPPER(p_owner);
+      str_owner       VARCHAR2(30 Char) := UPPER(p_owner);
       ary_index_owner MDSYS.SDO_STRING2_ARRAY;
       ary_index_name  MDSYS.SDO_STRING2_ARRAY;
       ary_spx         dz_spidx_list;
@@ -467,7 +373,7 @@ AS
       ,p_output     OUT MDSYS.SDO_STRING2_ARRAY
    )
    AS
-      str_owner  VARCHAR2(30) := UPPER(p_owner);
+      str_owner  VARCHAR2(30 Char) := UPPER(p_owner);
       ary_spx    dz_spidx_list;
       
    BEGIN
@@ -519,7 +425,7 @@ AS
       ,p_table_name   IN  VARCHAR2
    ) RETURN dz_spidx_list
    AS
-      str_owner VARCHAR2(30) := UPPER(p_owner);
+      str_owner VARCHAR2(30 Char) := UPPER(p_owner);
       ary_spx   dz_spidx_list;
       
    BEGIN
@@ -573,15 +479,15 @@ AS
       ,p_quiet        IN  VARCHAR2 DEFAULT 'FALSE'
    )
    AS
-      str_filter     VARCHAR2(4000) := UPPER(p_filter);
-      str_quiet      VARCHAR2(4000) := UPPER(p_quiet);
+      str_filter     VARCHAR2(4000 Char) := UPPER(p_filter);
+      str_quiet      VARCHAR2(4000 Char) := UPPER(p_quiet);
       ary_tables     MDSYS.SDO_STRING2_ARRAY;
       ary_columns    MDSYS.SDO_STRING2_ARRAY;
       ary_colnums    MDSYS.SDO_NUMBER_ARRAY;
       ary_indexes    MDSYS.SDO_STRING2_ARRAY;
-      str_tablespace_blurb VARCHAR2(4000);
-      str_indexname  VARCHAR2(30);
-      str_sql        VARCHAR2(4000);
+      str_tablespace_blurb VARCHAR2(4000 Char);
+      str_indexname  VARCHAR2(30 Char);
+      str_sql        VARCHAR2(4000 Char);
       
    BEGIN
       
@@ -790,16 +696,16 @@ AS
       ,p_status_message     OUT VARCHAR2
    )
    AS
-      str_owner1        VARCHAR2(30);
-      str_table1        VARCHAR2(30);
-      str_owner2        VARCHAR2(30);
-      str_table2        VARCHAR2(30);
+      str_owner1        VARCHAR2(30 Char);
+      str_table1        VARCHAR2(30 Char);
+      str_owner2        VARCHAR2(30 Char);
+      str_table2        VARCHAR2(30 Char);
       num_counter1      PLS_INTEGER;
       num_counter2      PLS_INTEGER;
-      str_spidx_owner1  VARCHAR2(30);
-      str_spidx_table1  VARCHAR2(30);
-      str_spidx_owner2  VARCHAR2(30);
-      str_spidx_table2  VARCHAR2(30);
+      str_spidx_owner1  VARCHAR2(30 Char);
+      str_spidx_table1  VARCHAR2(30 Char);
+      str_spidx_owner2  VARCHAR2(30 Char);
+      str_spidx_table2  VARCHAR2(30 Char);
       
    BEGIN
    
@@ -927,7 +833,7 @@ AS
    ) RETURN VARCHAR2
    AS
       num_return_code    NUMBER;
-      str_status_message VARCHAR2(4000);
+      str_status_message VARCHAR2(4000 Char);
       
    BEGIN
       sdo_join_check(
@@ -960,7 +866,7 @@ AS
    ) RETURN VARCHAR2
    AS
       num_return_code    NUMBER;
-      str_status_message VARCHAR2(4000);
+      str_status_message VARCHAR2(4000 Char);
       
    BEGIN
       sdo_join_check(
