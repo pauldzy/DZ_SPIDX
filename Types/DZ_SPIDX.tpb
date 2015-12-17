@@ -28,9 +28,12 @@ AS
       IF p_table_owner IS NULL
       THEN
          self.table_owner := USER;
+         
       ELSE
          self.table_owner := p_table_owner;
+         
       END IF;
+      
       self.table_name     := p_table_name;
       self.column_name    := p_column_name;
       
@@ -44,6 +47,7 @@ AS
       IF self.geometry_srid IS NULL
       THEN
          self.harvest_sdo_srid();
+         
       END IF;
              
       RETURN;
@@ -96,9 +100,9 @@ AS
       self            IN OUT dz_spidx
    ) RETURN VARCHAR2
    AS
-      str_sql         VARCHAR2(4000);
-      str_table_owner VARCHAR2(30);
-      str_index_owner VARCHAR2(30);
+      str_sql         VARCHAR2(4000 Char);
+      str_table_owner VARCHAR2(30 Char);
+      str_index_owner VARCHAR2(30 Char);
       
    BEGIN
    
@@ -109,7 +113,10 @@ AS
       IF self.table_name IS NULL
       OR self.column_name IS NULL
       THEN
-         RAISE_APPLICATION_ERROR(-20001,'spatial index object not complete!');
+         RAISE_APPLICATION_ERROR(
+             -20001
+            ,'spatial index object not complete'
+         );
       
       END IF;
       
@@ -191,8 +198,8 @@ AS
       self            IN OUT dz_spidx
    ) RETURN VARCHAR2
    AS
-      str_sql         VARCHAR2(4000);
-      str_index_owner VARCHAR2(30);
+      str_sql         VARCHAR2(4000 Char);
+      str_index_owner VARCHAR2(30 Char);
       
    BEGIN
    
@@ -202,14 +209,20 @@ AS
       --------------------------------------------------------------------------
       IF self.index_name IS NULL
       THEN
-         RAISE_APPLICATION_ERROR(-20001,'spatial index object not complete!');
+         RAISE_APPLICATION_ERROR(
+             -20001
+            ,'spatial index object not complete'
+         );
+         
       END IF;
       
       IF self.index_owner IS NULL
       THEN
          str_index_owner := USER;
+         
       ELSE
          str_index_owner := self.index_owner;
+         
       END IF;
       
       --------------------------------------------------------------------------
@@ -276,6 +289,7 @@ AS
          IF self.geometry_srid IS NULL
          THEN
              self.harvest_sdo_srid();
+             
          END IF;
       
       END IF;
@@ -315,41 +329,31 @@ AS
       AND (p_keyword IS NULL OR p_keyword IN ('XY'))
       THEN
          self.geometry_srid := p_srid;
-         self.geometry_dim_array := SDO_DIM_ARRAY(
-             SDO_DIM_ELEMENT('X',-180,180,0.05)
-            ,SDO_DIM_ELEMENT('Y',-90,90,0.05)
-         );
+         self.geometry_dim_array := dz_spidx.geodetic_XY_diminfo();
          
       ELSIF p_srid IN (8265,4269,8307,4326)
       AND (p_keyword IS NULL OR p_keyword IN ('XYM'))
       THEN
          self.geometry_srid := p_srid;
-         self.geometry_dim_array := SDO_DIM_ARRAY(
-             SDO_DIM_ELEMENT('X',-180,180,0.05)
-            ,SDO_DIM_ELEMENT('Y',-90,90,0.05)
-            ,SDO_DIM_ELEMENT('M',0,100,0.0001)
-         );
+         self.geometry_dim_array := dz_spidx.geodetic_XYM_diminfo();
       
       ELSIF p_srid IN (3857)
       AND (p_keyword IS NULL OR p_keyword IN ('XY'))
       THEN
          self.geometry_srid := p_srid;
-         self.geometry_dim_array := SDO_DIM_ARRAY(
-             SDO_DIM_ELEMENT('X',-20037508.34,20037508.34,0.05)
-            ,SDO_DIM_ELEMENT('Y',-20037508.34,20037508.34,0.05)
-         );
+         self.geometry_dim_array := dz_spidx.webmercator_XY_diminfo();
          
       ELSIF p_srid BETWEEN 1000001 AND 1000005
       AND (p_keyword IS NULL OR p_keyword IN ('XY'))
       THEN
          self.geometry_srid := p_srid;
-         self.geometry_dim_array := SDO_DIM_ARRAY(
-             SDO_DIM_ELEMENT('X',-999999999,999999999,0.05)
-            ,SDO_DIM_ELEMENT('Y',-999999999,999999999,0.05)
-         );
+         self.geometry_dim_array := dz_spidx.albers_XY_diminfo();
    
       ELSE
-         RAISE_APPLICATION_ERROR(-20001,'srid has not be predefined in object');
+         RAISE_APPLICATION_ERROR(
+             -20001
+            ,'srid has not be predefined in object'
+         );
          
       END IF;
       
@@ -379,7 +383,7 @@ AS
       p_srid          IN  NUMBER
    )
    AS
-      str_sql VARCHAR2(4000);
+      str_sql VARCHAR2(4000 Char);
       
    BEGIN
    
@@ -405,8 +409,8 @@ AS
       self  IN OUT dz_spidx
    ) 
    AS
-      str_table_owner VARCHAR2(30);
-      str_index_owner VARCHAR2(30);
+      str_table_owner VARCHAR2(30 Char);
+      str_index_owner VARCHAR2(30 Char);
       
    BEGIN
    
@@ -428,7 +432,7 @@ AS
          
       END IF;
       
-      IF self.table_name IS NOT NULL
+      IF self.table_name   IS NOT NULL
       AND self.column_name IS NOT NULL
       THEN
          SELECT
@@ -504,15 +508,17 @@ AS
       self  IN OUT dz_spidx
    )
    AS
-      str_table_owner VARCHAR2(30);
+      str_table_owner VARCHAR2(30 Char);
       
    BEGIN
    
       IF self.table_owner IS NULL
       THEN
          str_table_owner := USER;
+         
       ELSE
          str_table_owner := self.table_owner;
+         
       END IF;
    
       SELECT
@@ -547,7 +553,7 @@ AS
       self  IN OUT dz_spidx
    )
    AS
-      str_sql VARCHAR2(4000);
+      str_sql VARCHAR2(4000 Char);
       
    BEGIN
    
@@ -586,7 +592,10 @@ AS
          AND a.column_name = self.column_name;
       
       ELSE
-         RAISE_APPLICATION_ERROR(-20001,'not spatial table owner');
+         RAISE_APPLICATION_ERROR(
+             -20001
+            ,'not spatial table owner'
+         );
          
       END IF;
       
@@ -635,11 +644,188 @@ AS
          COMMIT;
          
       ELSE
-         RAISE_APPLICATION_ERROR(-20001,'not spatial table owner');
+         RAISE_APPLICATION_ERROR(
+             -20001
+            ,'not spatial table owner'
+         );
          
       END IF;
          
    END update_sdo_metadata;
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION geodetic_XY_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY
+   AS
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-180
+             ,180
+             ,0.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-90
+             ,90
+             ,0.05
+          )
+      );
+      
+   END geodetic_XY_diminfo;
+
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION geodetic_XYZ_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   AS  
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-180
+             ,180
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-90
+             ,90
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Z'
+             ,p_z_lower_bound
+             ,p_z_upper_bound
+             ,p_z_tolerance
+          )
+      );
+      
+   END geodetic_XYZ_diminfo;
+
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION geodetic_XYM_diminfo(
+       p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   AS
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-180
+             ,180
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-90
+             ,90
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'M'
+             ,p_m_lower_bound
+             ,p_m_upper_bound
+             ,p_m_tolerance
+          )
+      );
+      
+   END geodetic_XYM_diminfo;
+
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION geodetic_XYZM_diminfo(
+       p_z_lower_bound NUMBER DEFAULT -15000
+      ,p_z_upper_bound NUMBER DEFAULT 15000
+      ,p_z_tolerance   NUMBER DEFAULT 0.001
+      ,p_m_lower_bound NUMBER DEFAULT 0
+      ,p_m_upper_bound NUMBER DEFAULT 100
+      ,p_m_tolerance   NUMBER DEFAULT 0.00001
+   ) RETURN MDSYS.SDO_DIM_ARRAY
+   AS
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-180
+             ,180
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-90
+             ,90
+             ,.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Z'
+             ,p_z_lower_bound
+             ,p_z_upper_bound
+             ,p_z_tolerance
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'M'
+             ,p_m_lower_bound
+             ,p_m_upper_bound
+             ,p_m_tolerance
+          )
+      );
+      
+   END geodetic_XYZM_diminfo;
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION webmercator_XY_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY
+   AS
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-20037508.34
+             ,20037508.34
+             ,0.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-20037508.34
+             ,20037508.34
+             ,0.05
+          )
+      );
+
+   END webmercator_XY_diminfo;
+   
+   -----------------------------------------------------------------------------
+   -----------------------------------------------------------------------------
+   STATIC FUNCTION albers_XY_diminfo
+   RETURN MDSYS.SDO_DIM_ARRAY
+   AS
+   BEGIN
+      RETURN MDSYS.SDO_DIM_ARRAY(
+          MDSYS.SDO_DIM_ELEMENT(
+              'X'
+             ,-999999999
+             ,999999999
+             ,0.05
+          )
+         ,MDSYS.SDO_DIM_ELEMENT(
+              'Y'
+             ,-999999999
+             ,999999999
+             ,0.05
+          )
+      );
+
+   END albers_XY_diminfo;
 
 END;
 /
