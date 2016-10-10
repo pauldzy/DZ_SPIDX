@@ -7,7 +7,7 @@ AS
    header: DZ_SPIDX
      
    - Build ID: DZBUILDIDDZ
-   - TFS Change Set: DZTFSCHANGESETDZ
+   - TFS Change Set: DZCHANGESETDZ
    
    Utilities for the management of Oracle MDSYS.SPATIAL_INDEX domain indexes
    
