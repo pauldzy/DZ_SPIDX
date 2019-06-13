@@ -6,8 +6,8 @@ AS
    /*
    header: DZ_SPIDX
      
-   - Build ID: DZBUILDIDDZ
-   - Change Set: DZCHANGESETDZ
+   - Release: %GITRELEASE%
+   - Commit Date: %GITCOMMITDATE%
    
    Utilities for the management of Oracle MDSYS.SPATIAL_INDEX domain indexes
    

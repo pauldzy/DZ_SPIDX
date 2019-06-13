@@ -1,15 +1,9 @@
-
---*************************--
-PROMPT sqlplus_header.sql;
-
 WHENEVER SQLERROR EXIT -99;
 WHENEVER OSERROR  EXIT -98;
 SET DEFINE OFF;
 
-
-
---*************************--
-PROMPT DZ_SPIDX_UTIL.pks;
+--******************************--
+PROMPT Packages/DZ_SPIDX_UTIL.pks 
 
 CREATE OR REPLACE PACKAGE dz_spidx_util
 AUTHID CURRENT_USER
@@ -121,9 +115,8 @@ END dz_spidx_util;
 
 GRANT EXECUTE ON dz_spidx_util TO PUBLIC;
 
-
---*************************--
-PROMPT DZ_SPIDX_UTIL.pkb;
+--******************************--
+PROMPT Packages/DZ_SPIDX_UTIL.pkb 
 
 CREATE OR REPLACE PACKAGE BODY dz_spidx_util
 AS
@@ -923,9 +916,8 @@ AS
 END dz_spidx_util;
 /
 
-
---*************************--
-PROMPT DZ_SPIDX.tps;
+--******************************--
+PROMPT Types/DZ_SPIDX.tps 
 
 CREATE OR REPLACE TYPE dz_spidx FORCE
 AUTHID CURRENT_USER
@@ -1075,9 +1067,8 @@ AS OBJECT (
 
 GRANT EXECUTE ON dz_spidx TO PUBLIC;
 
-
---*************************--
-PROMPT DZ_SPIDX.tpb;
+--******************************--
+PROMPT Types/DZ_SPIDX.tpb 
 
 CREATE OR REPLACE TYPE BODY dz_spidx
 AS
@@ -1911,9 +1902,8 @@ AS
 END;
 /
 
-
---*************************--
-PROMPT DZ_SPIDX_LIST.tps;
+--******************************--
+PROMPT Collections/DZ_SPIDX_LIST.tps 
 
 CREATE OR REPLACE TYPE dz_spidx_list                                          
 AS 
@@ -1922,9 +1912,8 @@ TABLE OF dz_spidx;
 
 GRANT EXECUTE ON dz_spidx_list TO PUBLIC;
 
-
---*************************--
-PROMPT DZ_SPIDX_MAIN.pks;
+--******************************--
+PROMPT Packages/DZ_SPIDX_MAIN.pks 
 
 CREATE OR REPLACE PACKAGE dz_spidx_main
 AUTHID CURRENT_USER
@@ -1934,8 +1923,8 @@ AS
    /*
    header: DZ_SPIDX
      
-   - Build ID: 4
-   - TFS Change Set: 8291
+   - Release: 
+   - Commit Date: Mon Oct 10 16:41:18 2016 -0400
    
    Utilities for the management of Oracle MDSYS.SPATIAL_INDEX domain indexes
    
@@ -2360,9 +2349,8 @@ END dz_spidx_main;
 
 GRANT EXECUTE ON dz_spidx_main TO public;
 
-
---*************************--
-PROMPT DZ_SPIDX_MAIN.pkb;
+--******************************--
+PROMPT Packages/DZ_SPIDX_MAIN.pkb 
 
 CREATE OR REPLACE PACKAGE BODY dz_spidx_main
 AS
@@ -3258,18 +3246,17 @@ AS
 END dz_spidx_main;
 /
 
-
---*************************--
-PROMPT DZ_SPIDX_TEST.pks;
+--******************************--
+PROMPT Packages/DZ_SPIDX_TEST.pks 
 
 CREATE OR REPLACE PACKAGE dz_spidx_test
 AUTHID DEFINER
 AS
 
-   C_TFS_CHANGESET CONSTANT NUMBER := 8291;
-   C_JENKINS_JOBNM CONSTANT VARCHAR2(255 Char) := 'NULL';
-   C_JENKINS_BUILD CONSTANT NUMBER := 4;
-   C_JENKINS_BLDID CONSTANT VARCHAR2(255 Char) := 'NULL';
+   C_GITRELEASE    CONSTANT VARCHAR2(255 Char) := '';
+   C_GITCOMMIT     CONSTANT VARCHAR2(255 Char) := '5b36b7eef870f2e98b3fa693e99f5b6b17a35d48';
+   C_GITCOMMITDATE CONSTANT VARCHAR2(255 Char) := 'Mon Oct 10 16:41:18 2016 -0400';
+   C_GITCOMMITAUTH CONSTANT VARCHAR2(255 Char) := 'Paul Dziemiela';
    
    C_PREREQUISITES CONSTANT MDSYS.SDO_STRING2_ARRAY := MDSYS.SDO_STRING2_ARRAY(
    );
@@ -3299,9 +3286,8 @@ END dz_spidx_test;
 
 GRANT EXECUTE ON dz_spidx_test TO public;
 
-
---*************************--
-PROMPT DZ_SPIDX_TEST.pkb;
+--******************************--
+PROMPT Packages/DZ_SPIDX_TEST.pkb 
 
 CREATE OR REPLACE PACKAGE BODY dz_spidx_test
 AS
@@ -3344,10 +3330,12 @@ AS
    RETURN VARCHAR2
    AS
    BEGIN
-      RETURN '{"TFS":' || C_TFS_CHANGESET || ','
-      || '"JOBN":"' || C_JENKINS_JOBNM || '",'   
-      || '"BUILD":' || C_JENKINS_BUILD || ','
-      || '"BUILDID":"' || C_JENKINS_BLDID || '"}';
+      RETURN '{'
+      || ' "GITRELEASE":"'    || C_GITRELEASE    || '"'
+      || ',"GITCOMMIT":"'     || C_GITCOMMIT     || '"'
+      || ',"GITCOMMITDATE":"' || C_GITCOMMITDATE || '"'
+      || ',"GITCOMMITAUTH":"' || C_GITCOMMITAUTH || '"'
+      || '}';
       
    END version;
    
@@ -3373,11 +3361,6 @@ AS
 
 END dz_spidx_test;
 /
-
-
---*************************--
-PROMPT sqlplus_footer.sql;
-
 
 SHOW ERROR;
 
@@ -3412,4 +3395,5 @@ END;
 /
 
 EXIT;
+SET DEFINE OFF;
 
